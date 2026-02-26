@@ -92,9 +92,36 @@ EnviroStation-CLI/
     ├── test_online.py
     ├── test_integration.py
     └── test_validation.py
-🤝 Contributing
-Pull requests are welcome.
-For major changes, please open an issue first to discuss what you’d like to change.
+## 📚 Documentation
+
+EnviroStation CLI provides a modular architecture for fetching, mapping, and analyzing environmental station data.
+
+### Core Modules
+
+| Module | Description |
+|--------|-------------|
+| `api_client.py` | Handles API requests with retries + caching |
+| `providers.py` | Defines provider endpoints and metadata |
+| `mapping.py` | Normalizes station and reading data |
+| `region_search.py` | Fuzzy region matching and filtering |
+| `validation.py` | Input validation and sanitization |
+| `system_info.py` | Auto-detects system and location info |
+| `geo.py` | Provider auto-selection and geolocation helpers |
+| `utils/helpers.py` | Shared utility functions |
+
+### Test Suite
+
+The project includes a full offline + online test suite:
+
+- `test_offline.py` — mapping, region search, validation  
+- `test_online.py` — live API tests  
+- `test_integration.py` — system-level checks  
+- `test_validation.py` — input sanitization  
+
+Run tests:
+
+```bash
+python run_tests.py
 
 📜 License
 This project is licensed under the MIT License.
