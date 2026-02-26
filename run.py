@@ -238,3 +238,37 @@ def main_menu():
 
 if __name__ == "__main__":
     main_menu()
+from helpers import fuzzy_match
+
+def search_stations_menu(provider, stations):
+    q = input("Enter search text (name/river/town/id): ").strip().lower()
+
+    results = []
+    for s in stations:
+        fields = [
+            s.get("label", ""),
+            s.get("town", ""),
+            s.get("river", ""),
+            s.get("region", ""),
+            s.get("station_id", ""),
+        ]
+
+        if any(fuzzy_match(q, f) for f in fields):
+            results.append(s)
+
+    if not results:
+        print("No stations found.")
+        pause()
+        return None
+
+    print(f"\nFound {len(results)} stations:")
+    for i, s in enumerate(results[:20], start=1):
+        print(f"{i}) {s['label']} ({s['station_id']})")
+
+    choice = input("\nSelect station: ").strip()
+    try:
+        return results[int(choice) - 1]
+    except Exception:
+        print("Invalid choice.")
+        pause()
+        return None

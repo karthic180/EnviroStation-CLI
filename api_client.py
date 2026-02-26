@@ -2,7 +2,7 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 from functools import lru_cache
 from providers import PROVIDERS
-from utils.helpers import extract_uuid_from_url, parse_csv
+from helpers import extract_uuid_from_url, parse_csv
 
 
 def _provider(pid):
@@ -32,20 +32,22 @@ def fetch_stations(pid):
     if p.format == "csv":
         return {"items": parse_csv(r.text)}
 
-    return r.json()
+    try:
+        return r.json()
+    except Exception:
+        return {"items": []}
 
 
 @lru_cache(maxsize=64)
 def fetch_measures_for_station(pid, station_uri):
     p = _provider(pid)
 
-    if p.region == "uk":
-        url = f"{p.measures}?station={station_uri}"
-        r = SESSION.get(url, timeout=p.timeout)
+    if p.region == "uk" and p.format == "csv":
+        r = SESSION.get(p.measures, timeout=p.timeout)
         r.raise_for_status()
-        return r.json()
+        return {"items": parse_csv(r.text)}
 
-    # For others we treat “measure” as a simple wrapper around station
+    # Australia & Canada treat station as measure
     return {"items": [{"measure_uri": station_uri, "station": station_uri}]}
 
 
@@ -53,24 +55,20 @@ def fetch_measures_for_station(pid, station_uri):
 def fetch_readings_for_measure(pid, measure_uri_or_id):
     p = _provider(pid)
 
-    if p.region == "uk":
-        mid = extract_uuid_from_url(measure_uri_or_id)
-        url = f"{p.readings}/{mid}/readings"
+    if p.region == "uk" and p.format == "csv":
+        url = f"{p.readings}?station={measure_uri_or_id}&_limit=200&sort=latest"
         r = SESSION.get(url, timeout=p.timeout)
         r.raise_for_status()
-        return r.json()
-
-    if p.region == "nz":
-        url = f"{p.readings}?station={measure_uri_or_id}&format=json"
-        r = SESSION.get(url, timeout=p.timeout)
-        r.raise_for_status()
-        return r.json()
+        return {"items": parse_csv(r.text)}
 
     if p.region == "aus":
         url = f"{p.readings}/{measure_uri_or_id}.json"
         r = SESSION.get(url, timeout=p.timeout)
         r.raise_for_status()
-        return r.json()
+        try:
+            return r.json()
+        except Exception:
+            return {"items": []}
 
     if p.region == "ca":
         url = f"{p.readings}/daily/{measure_uri_or_id}.csv"
@@ -78,10 +76,4 @@ def fetch_readings_for_measure(pid, measure_uri_or_id):
         r.raise_for_status()
         return {"items": parse_csv(r.text)}
 
-    if p.region == "eu":
-        url = f"{p.readings}?where=StationIdentifier='{measure_uri_or_id}'&f=json"
-        r = SESSION.get(url, timeout=p.timeout)
-        r.raise_for_status()
-        return r.json()
-
-    raise NotImplementedError(f"Readings not implemented for provider {pid}")
+    return {"items": []}

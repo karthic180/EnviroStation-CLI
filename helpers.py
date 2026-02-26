@@ -1,5 +1,12 @@
 import csv
 
+from rapidfuzz import fuzz
+
+def fuzzy_match(query: str, text: str, threshold: int = 60) -> bool:
+    if not text:
+        return False
+    score = fuzz.partial_ratio(query.lower(), text.lower())
+    return score >= threshold
 
 def extract_uuid_from_url(value: str) -> str:
     if not value:

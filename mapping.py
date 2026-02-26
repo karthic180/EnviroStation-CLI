@@ -1,17 +1,13 @@
-from utils.helpers import extract_items, safe_get, normalise_float, extract_uuid_from_url
+from helpers import extract_items, safe_get, normalise_float, extract_uuid_from_url
 
 
 def extract_region(provider_id, item):
     if provider_id == "united_kingdom":
-        return item.get("inRegion") or item.get("town")
-    if provider_id == "new_zealand":
-        return item.get("region")
+        return item.get("town") or item.get("catchmentName")
     if provider_id == "australia":
         return item.get("state")
     if provider_id == "canada":
         return item.get("Province") or item.get("province")
-    if provider_id == "europe":
-        return item.get("CountryCode")
     return None
 
 
@@ -21,20 +17,17 @@ def map_stations(provider_id: str, raw):
 
     for item in items:
         if provider_id == "united_kingdom":
-            uri = safe_get(item, "@id")
-            label = safe_get(item, "label")
-        elif provider_id == "new_zealand":
-            uri = item.get("station")
-            label = item.get("name")
+            uri = item.get("stationReference")
+            label = item.get("label")
+
         elif provider_id == "australia":
             uri = item.get("id")
             label = item.get("name")
+
         elif provider_id == "canada":
             uri = item.get("STATION_NUMBER")
             label = item.get("STATION_NAME")
-        elif provider_id == "europe":
-            uri = item.get("StationIdentifier")
-            label = item.get("StationName")
+
         else:
             uri = safe_get(item, "@id", "id")
             label = safe_get(item, "label", "name")
@@ -80,18 +73,6 @@ def map_readings(provider_id: str, raw, measure_id: str):
     mapped = []
 
     for item in items:
-        value = normalise_float(
-            safe_get(item, "value", "Rainfall", "obs", "Value", "FLOW", "LEVEL")
-        )
-        date = safe_get(item, "dateTime", "date", "time", "Date")
-
-        mapped.append(
-            {
-                "measure_id": measure_id,
-                "value": value,
-                "date": date,
-                "raw": item,
-            }
-        )
-
-    return mapped
+        if provider_id == "united_kingdom":
+            value = normalise_float(item.get("value"))
+            date = item.get
