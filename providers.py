@@ -1,50 +1,49 @@
-# providers.py
-"""
-Provider definitions for EnviroStation CLI.
+class Provider:
+    def __init__(self, name, stations, measures=None, readings=None, fmt="json", timeout=10, region=None):
+        self.name = name
+        self.stations = stations
+        self.measures = measures
+        self.readings = readings
+        self.format = fmt
+        self.timeout = timeout
+        self.region = region
 
-Each provider entry defines:
-- name: Human-readable name
-- stations_json: URL for station metadata
-- readings_json: URL for readings/time-series
-- format: "json" or "csv" (optional)
-"""
 
 PROVIDERS = {
-    "australia": {
-        "name": "Australia – Water Data Service",
-        "stations_json": "https://bom.gov.au/waterdata/services/stations",
-        "readings_json": "https://bom.gov.au/waterdata/services/readings",
-        "format": "json",
-    },
-
-    "new_zealand": {
-        "name": "New Zealand – NIWA Hydrology",
-        "stations_json": "https://api.niwa.co.nz/rainfall/stations",
-        "readings_json": "https://api.niwa.co.nz/rainfall/data",
-        "format": "json",
-    },
-
-    "canada": {
-        "name": "Canada – Hydrometric Data",
-        "stations_json": "https://dd.weather.gc.ca/hydrometric/csv/stations.csv",
-        "readings_json": "https://dd.weather.gc.ca/hydrometric/csv",
-        "format": "csv",
-    },
-
-    "united_kingdom": {
-        "name": "United Kingdom – Environment Agency Hydrology",
-        "stations_json": "https://environment.data.gov.uk/hydrology/id/stations",
-        "readings_json": "https://environment.data.gov.uk/hydrology/id/readings",
-        "format": "json",
-    },
-
-    "european_union": {
-        "name": "European Union – Water Quality",
-        "stations_json": "https://water.europa.eu/api/stations",
-        "readings_json": "https://water.europa.eu/api/readings",
-        "format": "json",
-    },
+    "united_kingdom": Provider(
+        name="United Kingdom – Environment Agency Hydrology",
+        stations="https://environment.data.gov.uk/hydrology/id/stations",
+        measures="https://environment.data.gov.uk/hydrology/id/measures",
+        readings="https://environment.data.gov.uk/hydrology/id/measures",
+        fmt="json",
+        region="uk",
+    ),
+    "new_zealand": Provider(
+        name="New Zealand – NIWA Hydrology (simplified)",
+        stations="https://api.niwa.co.nz/rainfall/stations",
+        readings="https://api.niwa.co.nz/rainfall/data",
+        fmt="json",
+        region="nz",
+    ),
+    "australia": Provider(
+        name="Australia – Bureau of Meteorology (simplified)",
+        stations="http://www.bom.gov.au/fwo/IDZ00054.json",
+        readings="http://www.bom.gov.au/fwo",
+        fmt="json",
+        region="aus",
+    ),
+    "canada": Provider(
+        name="Canada – Hydrometric (simplified)",
+        stations="https://dd.weather.gc.ca/hydrometric/csv/stations.csv",
+        readings="https://dd.weather.gc.ca/hydrometric/csv",
+        fmt="csv",
+        region="ca",
+    ),
+    "europe": Provider(
+        name="European Union – EEA Waterbase (simplified)",
+        stations="https://water.discomap.eea.europa.eu/arcgis/rest/services/Waterbase/WISE_SoE_Eionet/MapServer/0/query?where=1%3D1&f=json",
+        readings="https://water.discomap.eea.europa.eu/arcgis/rest/services/Waterbase/WISE_SoE_Eionet/MapServer/0/query",
+        fmt="json",
+        region="eu",
+    ),
 }
-
-# Dynamic providers added at runtime (AI Search or manual URL)
-DYNAMIC_PROVIDERS = {}

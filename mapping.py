@@ -1,109 +1,97 @@
-# mapping.py
-"""
-Mapping functions convert raw API responses into a standard format.
-
-Each provider may have different field names.
-These functions normalize them.
-"""
-
-from providers import PROVIDERS, DYNAMIC_PROVIDERS
+from utils.helpers import extract_items, safe_get, normalise_float, extract_uuid_from_url
 
 
-# ------------------------------------------------------------
-# Station mapping
-# ------------------------------------------------------------
+def extract_region(provider_id, item):
+    if provider_id == "united_kingdom":
+        return item.get("inRegion") or item.get("town")
+    if provider_id == "new_zealand":
+        return item.get("region")
+    if provider_id == "australia":
+        return item.get("state")
+    if provider_id == "canada":
+        return item.get("Province") or item.get("province")
+    if provider_id == "europe":
+        return item.get("CountryCode")
+    return None
+
 
 def map_stations(provider_id: str, raw):
-    """
-    Convert raw station metadata into a standard structure.
-    This is a template — adjust per provider as needed.
-    """
+    items = extract_items(provider_id, raw)
     mapped = []
 
-    for item in raw:
-        station = (
-            item.get("station")
-            or item.get("stationId")
-            or item.get("id")
-            or item.get("site")
-            or item.get("code")
-        )
+    for item in items:
+        if provider_id == "united_kingdom":
+            uri = safe_get(item, "@id")
+            label = safe_get(item, "label")
+        elif provider_id == "new_zealand":
+            uri = item.get("station")
+            label = item.get("name")
+        elif provider_id == "australia":
+            uri = item.get("id")
+            label = item.get("name")
+        elif provider_id == "canada":
+            uri = item.get("STATION_NUMBER")
+            label = item.get("STATION_NAME")
+        elif provider_id == "europe":
+            uri = item.get("StationIdentifier")
+            label = item.get("StationName")
+        else:
+            uri = safe_get(item, "@id", "id")
+            label = safe_get(item, "label", "name")
 
-        name = (
-            item.get("name")
-            or item.get("stationName")
-            or item.get("siteName")
-            or station
+        mapped.append(
+            {
+                "station_uri": uri,
+                "station_id": extract_uuid_from_url(uri),
+                "label": label,
+                "river": safe_get(item, "riverName"),
+                "town": safe_get(item, "town"),
+                "region": extract_region(provider_id, item),
+                "raw": item,
+            }
         )
-
-        region = (
-            item.get("region")
-            or item.get("catchment")
-            or item.get("catchmentName")
-            or item.get("riverName")
-        )
-
-        lat = (
-            item.get("lat")
-            or item.get("latitude")
-            or item.get("y")
-        )
-
-        lon = (
-            item.get("lon")
-            or item.get("lng")
-            or item.get("longitude")
-            or item.get("x")
-        )
-
-        mapped.append({
-            "station": station,
-            "name": name,
-            "region": region,
-            "catchment": item.get("catchment") or item.get("catchmentName"),
-            "lat": lat,
-            "lon": lon,
-        })
 
     return mapped
 
 
-# ------------------------------------------------------------
-# Reading mapping
-# ------------------------------------------------------------
-
-def map_readings(provider_id: str, raw, station_id: str):
-    """
-    Convert raw readings into tuples:
-    (station, parameter, date, value)
-    """
+def map_measures(provider_id: str, raw):
+    items = extract_items(provider_id, raw)
     mapped = []
 
-    for item in raw:
-        value = (
-            item.get("value")
-            or item.get("reading")
-            or item.get("level")
-            or item.get("flow")
-            or item.get("discharge")
+    for item in items:
+        measure_uri = item.get("measure_uri") or item.get("station")
+        mapped.append(
+            {
+                "measure_uri": measure_uri,
+                "measure_id": extract_uuid_from_url(measure_uri),
+                "parameter": item.get("parameter"),
+                "period": item.get("period"),
+                "unit_name": item.get("unitName"),
+                "value_type": item.get("valueType"),
+                "raw": item,
+            }
         )
 
-        date = (
-            item.get("date")
-            or item.get("datetime")
-            or item.get("time")
-            or item.get("timestamp")
+    return mapped
+
+
+def map_readings(provider_id: str, raw, measure_id: str):
+    items = extract_items(provider_id, raw)
+    mapped = []
+
+    for item in items:
+        value = normalise_float(
+            safe_get(item, "value", "Rainfall", "obs", "Value", "FLOW", "LEVEL")
         )
+        date = safe_get(item, "dateTime", "date", "time", "Date")
 
-        parameter = (
-            item.get("parameter")
-            or item.get("type")
-            or "water_level"
+        mapped.append(
+            {
+                "measure_id": measure_id,
+                "value": value,
+                "date": date,
+                "raw": item,
+            }
         )
-
-        if value is None or date is None:
-            continue
-
-        mapped.append((station_id, parameter, date, float(value)))
 
     return mapped
